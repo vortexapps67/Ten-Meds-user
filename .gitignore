@@ -1,0 +1,20 @@
+# Environment & Secrets
+.env
+*.local
+local.properties
+
+# Gradle & Build Artifacts
+.gradle/
+build/
+app/build/
+*/build/
+*.apk
+*.aab
+
+# IDE & OS files
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+*.log
+.cxx/
