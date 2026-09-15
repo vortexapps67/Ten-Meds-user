@@ -1,0 +1,63 @@
+name: Build Ten Meds Android APK
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+
+jobs:
+  build-apk:
+    name: Build Release APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+          cache-key: "flutter-:os:-:channel:-:version:-:arch:-:hash:"
+
+      - name: Determine Flutter Project Directory
+        id: locate_project
+        run: |
+          if [ -f "pubspec.yaml" ]; then
+            echo "dir=." >> $GITHUB_OUTPUT
+          elif [ -f "ten_meds_mobile/pubspec.yaml" ]; then
+            echo "dir=ten_meds_mobile" >> $GITHUB_OUTPUT
+          else
+            echo "Error: pubspec.yaml not found!"
+            exit 1
+          fi
+
+      - name: Install Dependencies
+        working-directory: ${{ steps.locate_project.outputs.dir }}
+        run: flutter pub get
+
+      - name: Build Release APK
+        working-directory: ${{ steps.locate_project.outputs.dir }}
+        run: flutter build apk --release
+
+      - name: Upload APK as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Ten-Meds-Release-APK
+          path: ${{ steps.locate_project.outputs.dir }}/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 30
