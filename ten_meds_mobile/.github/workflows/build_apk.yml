@@ -9,7 +9,10 @@ on:
     branches:
       - main
       - master
-  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build-apk:
@@ -52,12 +55,30 @@ jobs:
 
       - name: Build Release APK
         working-directory: ${{ steps.locate_project.outputs.dir }}
-        run: flutter build apk --release
+        run: |
+          flutter build apk --release
+          cp build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/TenMeds.apk
 
       - name: Upload APK as Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Ten-Meds-Release-APK
-          path: ${{ steps.locate_project.outputs.dir }}/build/app/outputs/flutter-apk/app-release.apk
+          name: TenMeds-APK
+          path: ${{ steps.locate_project.outputs.dir }}/build/app/outputs/flutter-apk/TenMeds.apk
           if-no-files-found: error
           retention-days: 30
+
+      - name: Create or Update GitHub Release with Direct APK
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        with:
+          tag_name: v1.0.0
+          name: "Ten Meds v1.0.0 - Emergency Delivery App"
+          body: |
+            ### 💊 Ten Meds Android APK
+            Download the raw `TenMeds.apk` directly below to install on your Android phone without needing to unzip.
+            
+            - **Minimum Android Version:** Android 5.0 (API 21+)
+            - **Package Name:** `com.tenmeds.ten_meds_mobile`
+          files: ${{ steps.locate_project.outputs.dir }}/build/app/outputs/flutter-apk/TenMeds.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
